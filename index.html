@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RideGo — Bike & Auto Ride Booking Platform</title>
+  
+  <!-- Font & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="top-nav">
+    <div class="brand">
+      <div class="brand-badge"><i class="fa-solid fa-bolt"></i></div>
+      <div class="brand-text">
+        <span class="logo-title">RideGo</span>
+        <span class="logo-sub" id="roleSubtitle">Move faster. Ride smarter.</span>
+      </div>
+    </div>
+    <div class="nav-right" id="userHeaderActions" style="display: none;">
+      <span class="user-pill" id="navUserName">Ramesh</span>
+      <button class="logout-btn" id="logoutBtn" title="Logout">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="main-viewport">
+
+    <!-- ============================================== -->
+    <!-- VIEW 1: AUTH GATEWAY (3 SEPARATE LOGIN TABS)  -->
+    <!-- ============================================== -->
+    <section id="authView" class="view-panel active">
+      <div class="auth-hero">
+        <h1>Welcome to RideGo</h1>
+        <p>Select your portal to experience Coimbatore's fastest dispatch network.</p>
+      </div>
+
+      <!-- Portal Switcher Tabs -->
+      <div class="portal-tabs">
+        <button class="tab-btn active" data-portal="customer">
+          <i class="fa-solid fa-user"></i> Customer
+        </button>
+        <button class="tab-btn" data-portal="driver">
+          <i class="fa-solid fa-motorcycle"></i> Captain
+        </button>
+        <button class="tab-btn" data-portal="admin">
+          <i class="fa-solid fa-shield-halved"></i> Admin Hub
+        </button>
+      </div>
+
+      <!-- Customer Login Card -->
+      <div class="auth-card" id="customerAuthCard">
+        <div class="card-head">
+          <div class="head-icon bg-yellow"><i class="fa-solid fa-user"></i></div>
+          <div>
+            <h3>Customer Sign In</h3>
+            <p>Book bike taxis, autos & cabs across Coimbatore</p>
+          </div>
+        </div>
+        <form id="customerLoginForm" class="auth-form">
+          <div class="input-group">
+            <label>Email or Mobile</label>
+            <input type="text" id="custEmail" placeholder="e.g. ramesh@example.com" required>
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="custPass" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="primary-btn btn-yellow">Sign In as Customer</button>
+          <button type="button" class="demo-fill-btn" onclick="fillDemo('customer')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 1-Click Demo Login
+          </button>
+        </form>
+      </div>
+
+      <!-- Driver Login Card -->
+      <div class="auth-card" id="driverAuthCard" style="display: none;">
+        <div class="card-head">
+          <div class="head-icon bg-emerald"><i class="fa-solid fa-motorcycle"></i></div>
+          <div>
+            <h3>Captain Partner Login</h3>
+            <p>Earn per ride with zero commission surges</p>
+          </div>
+        </div>
+        <form id="driverLoginForm" class="auth-form">
+          <div class="input-group">
+            <label>Registered Mobile</label>
+            <input type="text" id="driverEmail" placeholder="e.g. karthik@ridego.in" required>
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="driverPass" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="primary-btn btn-emerald">Sign In to Captain HUD</button>
+          <button type="button" class="demo-fill-btn" onclick="fillDemo('driver')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 1-Click Demo Login
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Login Card -->
+      <div class="auth-card" id="adminAuthCard" style="display: none;">
+        <div class="card-head">
+          <div class="head-icon bg-indigo"><i class="fa-solid fa-shield-halved"></i></div>
+          <div>
+            <h3>Super Admin Console</h3>
+            <p>Operational control, fleet verification & metrics</p>
+          </div>
+        </div>
+        <form id="adminLoginForm" class="auth-form">
+          <div class="input-group">
+            <label>Admin ID</label>
+            <input type="text" id="adminEmail" placeholder="admin@ridego.in" required>
+          </div>
+          <div class="input-group">
+            <label>Secret Key</label>
+            <input type="password" id="adminPass" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="primary-btn btn-indigo">Enter Command Center</button>
+          <button type="button" class="demo-fill-btn" onclick="fillDemo('admin')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 1-Click Demo Login
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: CUSTOMER FLOW                         -->
+    <!-- ============================================== -->
+    <section id="customerView" class="view-panel">
+      <!-- Interactive Leaflet Map -->
+      <div id="customerMap" class="map-stage"></div>
+
+      <!-- Dynamic Customer Sheet -->
+      <div class="booking-sheet" id="bookingSheet">
+        
+        <!-- Step A: Location & Ride Selection -->
+        <div id="selectFlow" class="sheet-step active">
+          <div class="location-box">
+            <div class="loc-row">
+              <span class="dot green"></span>
+              <select id="pickupSelect" class="loc-dropdown" onchange="recalculateTrip()">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            <div class="loc-divider">
+              <button class="swap-btn" onclick="swapLocations()"><i class="fa-solid fa-arrow-down-up-across-line"></i></button>
+            </div>
+            <div class="loc-row">
+              <span class="dot red"></span>
+              <select id="dropSelect" class="loc-dropdown" onchange="recalculateTrip()">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Vehicle Choice Carousel -->
+          <div class="vehicle-picker">
+            <div class="vehicle-card active" onclick="selectVehicle('bike')" data-type="bike">
+              <i class="fa-solid fa-motorcycle icon-vehicle"></i>
+              <div class="veh-info">
+                <h4>Bike Taxi</h4>
+                <p>1 Seat • Quickest</p>
+              </div>
+              <div class="veh-price" id="bikePrice">₹28</div>
+            </div>
+
+            <div class="vehicle-card" onclick="selectVehicle('auto')" data-type="auto">
+              <i class="fa-solid fa-bus-simple icon-vehicle"></i>
+              <div class="veh-info">
+                <h4>Auto Rickshaw</h4>
+                <p>3 Seats • Pocket Friendly</p>
+              </div>
+              <div class="veh-price" id="autoPrice">₹42</div>
+            </div>
+
+            <div class="vehicle-card" onclick="selectVehicle('cab')" data-type="cab">
+              <i class="fa-solid fa-car-side icon-vehicle"></i>
+              <div class="veh-info">
+                <h4>Mini Cab</h4>
+                <p>4 Seats • AC Comfort</p>
+              </div>
+              <div class="veh-price" id="cabPrice">₹65</div>
+            </div>
+          </div>
+
+          <!-- Trip Summary Bar -->
+          <div class="trip-stats-bar">
+            <span><i class="fa-solid fa-route"></i> <strong id="tripDistance">1.2 km</strong></span>
+            <span><i class="fa-solid fa-clock"></i> <strong id="tripEta">4 mins</strong></span>
+            <span><i class="fa-solid fa-shield-halved"></i> Insured Trip</span>
+          </div>
+
+          <!-- Elevated Action Button Container -->
+          <div class="sheet-action-container">
+            <button class="primary-btn btn-yellow w-full" onclick="startRideSearch()">
+              Book <span id="btnVehType">Bike Taxi</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step B: Searching Driver Radar -->
+        <div id="searchingFlow" class="sheet-step">
+          <div class="radar-box">
+            <div class="radar-pulse"></div>
+            <i class="fa-solid fa-radar radar-icon"></i>
+          </div>
+          <h3>Connecting to Captains...</h3>
+          <p class="subtle">Broadcasting your request to nearby drivers in Gandhipuram area</p>
+          <div class="sheet-action-container">
+            <button class="ghost-btn w-full" onclick="cancelRideSearch()">Cancel Request</button>
+          </div>
+        </div>
+
+        <!-- Step C: Driver Assigned / In Progress -->
+        <div id="trackedFlow" class="sheet-step">
+          <div class="driver-banner">
+            <div class="driver-avatar"><i class="fa-solid fa-user-ninja"></i></div>
+            <div class="driver-meta">
+              <h4 id="driverName">Karthik Selvam</h4>
+              <p><i class="fa-solid fa-star text-yellow"></i> <strong>4.89</strong> • <span id="driverVehicleModel">Honda Activa 6G</span></p>
+              <span class="reg-badge" id="driverPlate">TN 38 BX 4892</span>
+            </div>
+            <div class="otp-pill">
+              <span class="otp-label">START OTP</span>
+              <strong class="otp-val">4892</strong>
+            </div>
+          </div>
+
+          <div class="ride-status-tracker">
+            <div class="status-indicator">
+              <span class="pulse-dot"></span>
+              <span id="liveStatusText">Captain is arriving at your pickup</span>
+            </div>
+            <div class="call-buttons">
+              <button class="circle-btn" onclick="alert('Calling Captain Karthik at +91 98421 23456...')"><i class="fa-solid fa-phone"></i></button>
+              <button class="circle-btn" onclick="alert('Message: Captain is 2 mins away.')"><i class="fa-solid fa-comment-dots"></i></button>
+            </div>
+          </div>
+
+          <div class="sheet-action-container">
+            <button class="danger-btn w-full" id="custCancelBtn" onclick="cancelActiveRide()">Cancel Ride</button>
+          </div>
+        </div>
+
+        <!-- Step D: Payment Simulation -->
+        <div id="paymentFlow" class="sheet-step">
+          <div class="payment-header">
+            <h3>Ride Finished</h3>
+            <div class="fare-total">₹<span id="payFareAmount">42.00</span></div>
+          </div>
+          <div class="payment-methods">
+            <label class="pay-method active">
+              <input type="radio" name="payType" value="upi" checked>
+              <i class="fa-solid fa-mobile-screen-button"></i>
+              <div>
+                <strong>UPI / Google Pay</strong>
+                <p>Instant UPI Collect</p>
+              </div>
+            </label>
+            <label class="pay-method">
+              <input type="radio" name="payType" value="cash">
+              <i class="fa-solid fa-money-bill-wave"></i>
+              <div>
+                <strong>Cash to Driver</strong>
+                <p>Pay cash after ride</p>
+              </div>
+            </label>
+          </div>
+          <div class="sheet-action-container">
+            <button class="primary-btn btn-yellow w-full" onclick="processPayment()">Confirm & Pay</button>
+          </div>
+        </div>
+
+        <!-- Step E: Rating & Receipt -->
+        <div id="receiptFlow" class="sheet-step">
+          <div class="receipt-header">
+            <i class="fa-solid fa-circle-check success-icon"></i>
+            <h3>Payment Received</h3>
+            <p>Receipt #RG-CBE-98421</p>
+          </div>
+          <div class="rating-stars">
+            <i class="fa-solid fa-star active" onclick="setRating(1)"></i>
+            <i class="fa-solid fa-star active" onclick="setRating(2)"></i>
+            <i class="fa-solid fa-star active" onclick="setRating(3)"></i>
+            <i class="fa-solid fa-star active" onclick="setRating(4)"></i>
+            <i class="fa-solid fa-star active" onclick="setRating(5)"></i>
+          </div>
+          <textarea class="review-box" placeholder="Write feedback for your Captain (optional)..."></textarea>
+          <div class="sheet-action-container">
+            <button class="primary-btn btn-yellow w-full" onclick="finishAndReset()">Submit & Book Again</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 3: CAPTAIN / DRIVER FLOW                 -->
+    <!-- ============================================== -->
+    <section id="driverView" class="view-panel">
+      <!-- Status Toggle Bar -->
+      <div class="driver-topbar">
+        <div class="duty-status">
+          <span class="duty-pill online" id="dutyBadge">ON DUTY</span>
+          <span class="subtle" id="dutySub">Auto-accepting trips nearby</span>
+        </div>
+        <button class="duty-toggle-btn" id="toggleDutyBtn" onclick="toggleDriverDuty()">Go Offline</button>
+      </div>
+
+      <!-- Driver Metrics -->
+      <div class="driver-kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-lbl">Today's Earnings</span>
+          <h2 class="kpi-val text-emerald">₹920</h2>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">Completed Trips</span>
+          <h2 class="kpi-val">12</h2>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">Rating</span>
+          <h2 class="kpi-val text-yellow"><i class="fa-solid fa-star"></i> 4.9</h2>
+        </div>
+      </div>
+
+      <!-- Interactive Driver Map -->
+      <div id="driverMap" class="map-stage-driver"></div>
+
+      <!-- Driver Action Sheet -->
+      <div class="driver-action-sheet" id="driverActionSheet">
+        <div class="driver-idle-state" id="driverIdleMsg">
+          <i class="fa-solid fa-location-crosshairs spin-slow"></i>
+          <h4>Scanning Coimbatore for booking requests...</h4>
+        </div>
+
+        <div class="driver-active-trip" id="driverTripControls" style="display: none;">
+          <div class="trip-alert-header">
+            <div>
+              <span class="tag-badge">CUSTOMER DISPATCH</span>
+              <h4 id="driverCustName">Ramesh Kumar</h4>
+            </div>
+            <div class="fare-tag" id="driverTripFare">₹42.00</div>
+          </div>
+          <div class="route-preview">
+            <p><i class="fa-solid fa-circle dot green"></i> <span id="driverPickupName">Gandhipuram Bus Stand</span></p>
+            <p><i class="fa-solid fa-location-dot dot red"></i> <span id="driverDropName">RS Puram DB Road</span></p>
+          </div>
+          <div class="otp-check-row" id="otpInputBlock" style="display: none;">
+            <input type="text" id="driverOtpEntered" placeholder="Enter Customer OTP" maxlength="4">
+            <button class="primary-btn btn-emerald" onclick="driverVerifyOtp()">Verify OTP</button>
+          </div>
+          <div class="sheet-action-container">
+            <button class="primary-btn btn-emerald w-full" id="driverProgressBtn" onclick="advanceDriverTrip()">
+              Mark Arrived at Pickup
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 4: ADMIN HUB CONSOLE                     -->
+    <!-- ============================================== -->
+    <section id="adminView" class="view-panel">
+      <div class="admin-wrapper">
+        <div class="admin-head">
+          <div>
+            <h2>Central Command Console</h2>
+            <p class="subtle">Real-time Coimbatore ride logistics & fleet metrics</p>
+          </div>
+          <button class="primary-btn btn-indigo" onclick="alert('Database backup synced successfully.')">
+            <i class="fa-solid fa-rotate"></i> Sync Records
+          </button>
+        </div>
+
+        <!-- System Stats -->
+        <div class="admin-stat-cards">
+          <div class="admin-stat">
+            <span>Total Revenue</span>
+            <h3>₹48,250</h3>
+            <small class="text-emerald">+18% this week</small>
+          </div>
+          <div class="admin-stat">
+            <span>Completed Rides</span>
+            <h3>1,420</h3>
+            <small class="text-emerald">96.4% success rate</small>
+          </div>
+          <div class="admin-stat">
+            <span>Active Captains</span>
+            <h3>8 Online</h3>
+            <small class="text-yellow">Coimbatore zone</small>
+          </div>
+        </div>
+
+        <!-- Captain Approval & Fleet Table -->
+        <div class="table-card">
+          <div class="table-header">
+            <h4>Captain Verification & Fleet</h4>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Captain Name</th>
+                  <th>Vehicle</th>
+                  <th>Plate Number</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminDriversTableBody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Application JS Engine -->
+  <script src="app.js"></script>
+</body>
+</html>
